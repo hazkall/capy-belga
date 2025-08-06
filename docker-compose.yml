@@ -1,0 +1,78 @@
+services: 
+  capybelga:
+    image: capybelga:latest
+    build:
+      dockerfile: Dockerfile
+      target: release
+    ports:
+      - "8080:8080"
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=capybelga
+      - OTEL_SERVICE_VERSION=1.0.0
+      - OTEL_RESOURCE_ATTRIBUTES=service.name=capybelga,service.version=1.0.0,deployment.environment=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=capybelga_user
+      - DB_DB_PASSWORD=capybelga_pass
+      - DB_PASSWORD=capybelga_pass
+      - DB_NAME=capybelga_db
+      - RABBITMQ_URL=amqp://capy:belga@rabbitmq:5672/
+    depends_on:
+      - postgres
+      - rabbitmq
+      - otel-collector
+      - prometheus
+      - jaeger
+    networks:
+      - capy-network
+  postgres:
+    image: postgres-capy:latest
+    build:
+      dockerfile: Dockerfile
+      target: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: capybelga_user
+      POSTGRES_PASSWORD: capybelga_pass
+      POSTGRES_DB: capybelga_db
+    networks:
+    - capy-network
+  rabbitmq:
+    image: rabbitmq:3.13.7-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: capy
+      RABBITMQ_DEFAULT_PASS: belga
+    networks:
+      - capy-network
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib
+    command: ["--config=/etc/otel-collector.yml"]
+    volumes:
+      - ./otel-collector.yml:/etc/otel-collector.yml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - capy-network
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - capy-network
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "16686:16686"
+    networks:
+      - capy-network
+networks:
+  capy-network:
+    driver: bridge
