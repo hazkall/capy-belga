@@ -20,7 +20,9 @@ O objetivo é mostrar na prática como instrumentar uma aplicação Go para obse
 
 2. **Suba os serviços com Docker Compose:**
    ```bash
-   docker compose up --build
+   docker compose up postgres rabbitmq otel-collector prometheus jaeger grafana --build -d
+
+   docker compose up capybelga --build
    ```
 
 3. **Acesse os endpoints:**
